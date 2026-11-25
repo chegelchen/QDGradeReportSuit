@@ -1,4 +1,4 @@
-name: Build QDHS Grade Report Suit
+name: Build QDHS Grade Report Generator
 
 on:
   push:
@@ -7,7 +7,15 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: AppleSilicon
+          - os: macos-13
+            arch: Intel
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,20 +38,30 @@ jobs:
           pyinstaller \
             --noconfirm \
             --windowed \
-            --name "QDGradeReportSuit" \
+            --name "QDHS_Grade_Report_Generator" \
             --add-data "assets:assets" \
             main.py
 
-      - name: Package macOS .app as zip
+      - name: Package macOS .dmg and .zip
         run: |
+          mkdir -p dmg_staging
+          cp -R "dist/QDHS_Grade_Report_Generator.app" dmg_staging/
+          ln -s /Applications dmg_staging/Applications
+          hdiutil create \
+            -volname "QDHS Grade Report Generator" \
+            -srcfolder dmg_staging \
+            -ov -format UDZO \
+            "dist/QDHS_Grade_Report_Generator_macOS_${{ matrix.arch }}.dmg"
           cd dist
-          zip -r -y QDGradeReportSuit_macOS.zip QDGradeReportSuit.app
+          zip -r -y "QDHS_Grade_Report_Generator_macOS_${{ matrix.arch }}.zip" QDHS_Grade_Report_Generator.app
 
-      - name: Upload macOS Artifact
+      - name: Upload macOS Artifacts (.dmg & .zip)
         uses: actions/upload-artifact@v4
         with:
-          name: QDGradeReportSuit
-          path: dist/QDGradeReportSuit.zip
+          name: QDHS_Grade_Report_Generator_macOS_${{ matrix.arch }}
+          path: |
+            dist/QDHS_Grade_Report_Generator_macOS_${{ matrix.arch }}.dmg
+            dist/QDHS_Grade_Report_Generator_macOS_${{ matrix.arch }}.zip
 
   build-windows:
     runs-on: windows-latest
@@ -70,12 +88,12 @@ jobs:
             --noconfirm `
             --onefile `
             --windowed `
-            --name "QDGradeReportSuit" `
+            --name "QDHS_Grade_Report_Generator" `
             --add-data "assets;assets" `
             main.py
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QDGradeReportSuit_Windows
-          path: dist/QDGradeReportSuit.exe
+          name: QDHS_Grade_Report_Generator_Windows
+          path: dist/QDHS_Grade_Report_Generator.exe
