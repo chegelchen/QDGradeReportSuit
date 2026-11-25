@@ -213,9 +213,14 @@ class QDHSGradeReportApp(tk.Tk):
         self.minsize(980, min(680, init_h))
         self.configure(bg=BG_PAGE)
 
-        # Base directories for smart default file discovery
-        self._app_dir = os.path.dirname(os.path.abspath(__file__))
-        self._parent_dir = os.path.dirname(self._app_dir)
+        # Base directories: use ~/Documents/QDHS_Grade_Reports when packaged (.app/.exe)
+        if getattr(sys, "frozen", False):
+            self._app_dir = os.path.join(os.path.expanduser("~"), "Documents", "QDHS_Grade_Reports")
+            os.makedirs(self._app_dir, exist_ok=True)
+            self._parent_dir = os.path.dirname(sys.executable)
+        else:
+            self._app_dir = os.path.dirname(os.path.abspath(__file__))
+            self._parent_dir = os.path.dirname(self._app_dir)
         self._search_dirs = [
             self._parent_dir,
             os.path.join(self._parent_dir, "NewData.Nov.24"),
